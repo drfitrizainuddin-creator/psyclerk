@@ -859,13 +859,7 @@ ${clinician}
         'Clear Entire Clerking Form?',
         'All patient demographics, checklist items, and formulation notes will be reset.',
         () => {
-          document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(el => el.value = '');
-          document.querySelectorAll('.chip-toggle').forEach(el => el.classList.remove('active'));
-          document.querySelectorAll('select').forEach(el => { const i = Array.from(el.options).findIndex(o => o.defaultSelected); el.selectedIndex = i >= 0 ? i : 0; });
-          
-          const now = new Date();
-          document.getElementById('encounter_datetime').value = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          generateNotes();
+          PsyForm.clearFormSilently();
           showToast('Form cleared successfully.');
         }
       );
