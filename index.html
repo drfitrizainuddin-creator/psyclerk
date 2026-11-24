@@ -1702,6 +1702,21 @@
     </div>
   </div>
 
+  <!-- My phrases (app chrome) -->
+  <button id="phrases-btn" data-no-capture type="button" style="display:none; position:fixed" class="z-40 px-2 py-1 rounded-md bg-sky-700 text-white text-[11px] font-bold shadow" title="Insert a saved phrase"><i class="fa-solid fa-quote-left"></i> Phrases</button>
+  <div id="phrases-popover" data-no-capture style="display:none" class="fixed z-50 inset-x-2 bottom-20 lg:inset-x-auto lg:right-6 lg:bottom-auto lg:top-24 lg:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-bold text-sm text-slate-900">My phrases</h2>
+      <button onclick="closePhrases()" class="w-8 h-8 rounded-lg hover:bg-slate-100" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="phrases-list" class="max-h-64 overflow-y-auto"></div>
+    <div class="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+      <input id="new-phrase-input" maxlength="500" placeholder="Save a new phrase…" class="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg">
+      <button id="save-phrase-btn" onclick="saveNewPhrase()" class="px-3 py-2 text-sm font-bold text-white bg-sky-700 rounded-lg">Save</button>
+    </div>
+    <p class="text-[11px] text-slate-400 mt-1.5">Saved on this device only. Don't save patient details here.</p>
+  </div>
+
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
     <div class="bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 border border-slate-700">
       <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
@@ -1736,5 +1751,6 @@
   <script src="js/form-state.js"></script>
   <script src="js/drafts-ui.js"></script>
   <script src="js/layout.js"></script>
+  <script src="js/phrases.js"></script>
 </body>
 </html>
