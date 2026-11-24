@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adult Psychiatry Clerking & Documentation System</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0369a1">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-report-container, #print-report-container * {
+        visibility: visible;
+      }
+      #print-report-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 24px;
+        background: white;
+        color: #111827;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .chip-toggle {
+      transition: all 0.12s ease-in-out;
+      user-select: none;
+    }
+    .chip-toggle.active {
+      background-color: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 1px 3px rgba(2, 132, 199, 0.35);
+    }
+    .chip-toggle-danger.active {
+      background-color: #e11d48;
+      color: #ffffff;
+      border-color: #e11d48;
+      box-shadow: 0 1px 3px rgba(225, 29, 72, 0.35);
+    }
+    .chip-toggle-warning.active {
+      background-color: #d97706;
+      color: #ffffff;
+      border-color: #d97706;
+      box-shadow: 0 1px 3px rgba(217, 119, 6, 0.35);
+    }
+    .chip-toggle-success.active {
+      background-color: #059669;
+      color: #ffffff;
+      border-color: #059669;
+      box-shadow: 0 1px 3px rgba(5, 150, 105, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Top App Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+      <div class="flex items-center space-x-3 shrink-0">
+        <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-sky-700 flex items-center justify-center text-white">
+          <i class="fa-solid fa-brain text-lg"></i>
+        </div>
+        <div class="phone-hide">
+          <h1 class="font-extrabold text-slate-900 text-base sm:text-lg leading-tight flex items-center gap-2">
+            PsyClerk Assistant
+            <span class="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Package 13p</span>
+          </h1>
+          <p class="text-[11px] text-slate-500 hidden 2xl:block">Adult Psychiatry Rapid Checklist • Comprehensive Intake • Follow-Up Review</p>
+        </div>
+      </div>
+
+      <!-- Main Template Switcher Tabs -->
+      <select id="mode-select" onchange="switchTemplateMode(this.value)" aria-label="Clerking mode" class="lg:hidden min-w-0 flex-1 max-w-[11rem] px-2 py-2 text-sm font-semibold border border-slate-200 rounded-lg bg-slate-50">
+        <option value="rapid">Rapid</option>
+        <option value="comprehensive" selected>Comprehensive</option>
+        <option value="followup">Follow-up</option>
+      </select>
+      <div class="hidden lg:flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold whitespace-nowrap">
+        <button id="tab-rapid" onclick="switchTemplateMode('rapid')" class="px-3 sm:px-4 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-500"></i>
+          <span>Rapid</span>
+        </button>
+        <button id="tab-comprehensive" onclick="switchTemplateMode('comprehensive')" class="px-3 sm:px-4 py-1.5 rounded-lg transition-all bg-white text-sky-700 shadow-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-book-medical text-sky-600"></i>
+          <span>Comprehensive</span>
+        </button>
+        <button id="tab-followup" onclick="switchTemplateMode('followup')" class="px-3 sm:px-4 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-arrows-rotate text-emerald-600"></i>
+          <span>Follow-up</span>
+        </button>
+      </div>
+
+      <!-- Quick Action Utilities -->
+      <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+        <button id="patients-btn" onclick="openPatients()" class="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-sky-800 bg-sky-50 hover:bg-sky-100 rounded-lg transition flex items-center gap-1.5 border border-sky-200" title="Patients saved on this device">
+          <i class="fa-solid fa-user-group"></i>
+          <span id="active-draft-label" class="hidden md:inline max-w-[9rem] truncate">No patient saved</span>
+          <span id="patients-count" class="bg-sky-600 text-white rounded-full px-1.5 text-[10px] font-bold">0</span>
+        </button>
+        <button onclick="loadSampleCase()" class="phone-hide px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1 border border-slate-300" title="Load real clinical sample to test generator">
+          <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
+          <span class="hidden md:inline">Sample Case</span>
+        </button>
+        <button onclick="confirmClearForm()" class="phone-hide px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition flex items-center gap-1 border border-rose-200" title="Reset all input fields">
+          <i class="fa-solid fa-trash-can"></i>
+          <span class="hidden md:inline">Clear</span>
+        </button>
+        <button onclick="generateNotes()" class="phone-hide px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 active:scale-95 transition-all rounded-lg shadow-md shadow-sky-600/20 flex items-center gap-1.5">
+          <i class="fa-solid fa-file-waveform"></i>
+          <span>Generate Note</span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div id="storage-warning" style="display:none" class="bg-rose-600 text-white text-xs font-semibold px-4 py-2 text-center">
+    <i class="fa-solid fa-triangle-exclamation"></i> Drafts can't be saved on this device (private browsing or storage full). Copy your note before closing this page.
+  </div>
+
+  <!-- Main Dual-Pane Clerking Workspace -->
+  <main class="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-5 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-5">
+    
+    <!-- LEFT PANE: Clinical Data Entry Form (7 of 12 columns) -->
+    <div id="phone-tabs" class="lg:hidden flex bg-slate-200/70 p-1 rounded-xl">
+      <button id="phone-tab-form" onclick="setPhoneTab('form')">Form</button>
+      <button id="phone-tab-note" onclick="setPhoneTab('note')">Note</button>
+    </div>
+
+    <section id="form-pane" class="lg:col-span-7 space-y-5">
+      <nav id="section-menu" class="sticky top-16 z-30 -mx-1 px-1 py-2 bg-slate-100/95 backdrop-blur flex items-center gap-1.5">
+        <div id="section-menu-items" class="flex gap-1.5 overflow-x-auto flex-1 min-w-0"></div>
+        <button id="next-incomplete-btn" onclick="jumpToNextIncomplete()" title="Next empty or incomplete section (Alt+N)" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-sky-700 text-white text-[11px] font-bold whitespace-nowrap"><i class="fa-solid fa-forward-step"></i> Next</button>
+      </nav>
+
+      <!-- Patient Demographics & Encounter Details Card (Shared) -->
+      <div id="sec-demographics" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <h2 class="font-bold text-slate-900 text-sm sm:text-base">Patient Demographics & Encounter Information</h2>
+          </div>
+          <span id="active-mode-badge" class="phone-hide text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-sky-100 text-sky-800 border border-sky-200">Part 2: Comprehensive Clerking</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="col-span-2 sm:col-span-2">
+            <label class="block font-semibold text-slate-600 mb-1">Patient Name</label>
+            <input type="text" id="pt_name" placeholder="Full name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">MRN / Hospital No.</label>
+            <input type="text" id="pt_mrn" placeholder="e.g. MRN12345" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">NRIC / Passport</label>
+            <input type="text" id="pt_nric" placeholder="ID / Passport" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Age & Gender</label>
+            <div class="grid grid-cols-2 gap-1">
+              <input type="number" id="pt_age" placeholder="Age" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+              <select id="pt_gender" class="w-full px-1 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none font-medium">
+                <option value="Not recorded" selected>— Not recorded —</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Marital Status</label>
+            <select id="pt_marital" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+                <option value="Not recorded" selected>— Not recorded —</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Separated">Separated</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Occupation</label>
+            <input type="text" id="pt_occupation" placeholder="e.g. Teacher, Unemployed" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Date & Time</label>
+            <input type="text" id="encounter_datetime" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Assessment Location</label>
+            <select id="encounter_location" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+              <option value="Psychiatry Specialist Clinic">Psychiatry Specialist Clinic</option>
+              <option value="Emergency Department (ED)">Emergency Dept (ED)</option>
+              <option value="Psychiatric Inpatient Ward">Inpatient Psych Ward</option>
+              <option value="Medical Ward Consultation-Liaison">Liaison Consultation</option>
+              <option value="Community / Telehealth">Community / Telehealth</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Referral Source</label>
+            <input type="text" id="encounter_referral" placeholder="e.g. GP, Poly, Self, Police" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Informant & Relationship</label>
+            <input type="text" id="encounter_informant" placeholder="e.g. Patient, Spouse, Mother" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Informant Reliability</label>
+            <select id="encounter_reliability" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+                <option value="Not recorded" selected>— Not recorded —</option>
+              <option value="Good">Good Reliability</option>
+              <option value="Fair">Fair Reliability</option>
+              <option value="Poor">Poor Reliability</option>
+            </select>
+          </div>
+
+          <div class="col-span-2 sm:col-span-4">
+            <label class="block font-semibold text-slate-600 mb-1">Assessing Clinician & Designation</label>
+            <input type="text" id="clinician_name" placeholder="e.g. Dr. Jane Roe (Psychiatry Registrar / Medical Officer)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 1: PART 1 - RAPID ADULT PSYCHIATRY CLERKING CHECKLIST -->
+      <!-- ======================================================== -->
+      <div id="view-rapid" class="hidden space-y-4">
+        
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-amber-900 text-xs">
+          <i class="fa-solid fa-bolt-lightning text-amber-600 text-base"></i>
+          <span><strong>Part 1 Rapid Mode:</strong> Designed for routine clinic, emergency triage, and brief new-patient assessment. Click chips to toggle positive findings.</span>
+        </div>
+
+        <!-- 1. Presenting Problem & Timeline -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-amber-500 text-white flex items-center justify-center text-xs font-bold">1</span>
+              Presenting Problem & Timeline
+            </h3>
+            <span class="text-[11px] text-slate-400">Chronology & Course</span>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Presenting Complaint(s) & Duration</label>
+            <input type="text" id="rapid_pc" placeholder="e.g. Low mood, severe insomnia and suicidal ideation for 3 weeks" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Course / Evolution (Check all that apply)</label>
+            <div class="flex flex-wrap gap-1.5" id="rapid-course-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Acute</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Continuous</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Subacute</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Episodic</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Insidious</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Fluctuating</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Improving</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Worsening</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Functional decline</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Precipitant / Recent Stressor</label>
+            <input type="text" id="rapid_precipitant" placeholder="e.g. Job termination 3 weeks ago, marital separation" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+        </div>
+
+        <!-- 2. Core Symptom Screen -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</span>
+              Core Symptom Screen (8 Domains)
+            </h3>
+            <span class="text-[11px] text-slate-400">Checklist & details</span>
+          </div>
+
+          <!-- Depression -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-cloud-rain text-sky-600"></i> Depression</span>
+              <div id="rapid-dep-impair" class="flex items-center gap-1 text-[11px]">
+                <span class="text-slate-500 mr-1">Impairment:</span>
+                <span onclick="selectSingleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Mild</span>
+                <span onclick="selectSingleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Mod</span>
+                <span onclick="selectSingleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Severe</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1" id="rapid-dep-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Low mood</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Anhedonia</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Low energy</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Guilt / hopelessness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Poor concentration</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Appetite / weight change</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Insomnia / hypersomnia</span>
+            </div>
+            <input type="text" id="rapid_dep_details" placeholder="Duration & key details..." class="w-full px-2.5 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+          </div>
+
+          <!-- Mania / Hypomania -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-sun text-amber-500"></i> Mania / Hypomania</span>
+              <div id="rapid-mania-prev" class="flex items-center gap-1 text-[11px]">
+                <span class="text-slate-500 mr-1">Prev episodes:</span>
+                <span onclick="selectSingleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No</span>
+                <span onclick="selectSingleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Yes</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1" id="rapid-mania-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Elevated / irritable mood</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Reduced need for sleep</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Increased energy</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Pressured speech</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Racing thoughts</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Grandiosity</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Risk-taking</span>
+            </div>
+            <input type="text" id="rapid_mania_details" placeholder="Duration & details..." class="w-full px-2.5 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+          </div>
+
+          <!-- Anxiety / Panic & Psychosis -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-heart-pulse text-rose-500"></i> Anxiety / Panic</span>
+              <div class="flex flex-wrap gap-1" id="rapid-anx-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Panic attacks</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Excessive worry</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Restlessness</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Somatic anxiety</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Avoidance / phobia</span>
+              </div>
+              <input type="text" id="rapid_anx_details" placeholder="Frequency / trigger..." class="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-eye text-purple-600"></i> Psychosis</span>
+              <div class="flex flex-wrap gap-1" id="rapid-psy-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Hallucinations</span>
+                <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Delusions</span>
+                <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Thought disorder</span>
+                <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Passivity / interference</span>
+                <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Command hallucination</span>
+              </div>
+              <input type="text" id="rapid_psy_details" placeholder="Perceptual / thought details..." class="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+            </div>
+
+            <!-- OCD & Trauma / PTSD -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-repeat text-indigo-500"></i> OCD</span>
+              <div class="flex flex-wrap gap-1" id="rapid-ocd-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Obsessions</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Compulsions</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Avoidance</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Reassurance seeking</span>
+              </div>
+              <input type="text" id="rapid_ocd_details" placeholder="Time occupied / interference..." class="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-teal-600"></i> Trauma / PTSD</span>
+              <div class="flex flex-wrap gap-1" id="rapid-trauma-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Intrusions</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Nightmares</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Avoidance</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Negative cognition/mood</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Hyperarousal</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Dissociation</span>
+              </div>
+              <input type="text" id="rapid_trauma_details" placeholder="Trauma history / duration..." class="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+            </div>
+
+            <!-- ADHD & Substance Use -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-compass text-amber-600"></i> ADHD / Neurodevelopmental</span>
+              <div class="flex flex-wrap gap-1" id="rapid-adhd-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Inattention</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Hyperactivity / restlessness</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Impulsivity</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Childhood onset</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">&ge;2 settings</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Functional impairment</span>
+              </div>
+              <input type="text" id="rapid_adhd_details" placeholder="Collateral / school history..." class="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-wine-bottle text-rose-700"></i> Substance Use</span>
+              <div class="flex flex-wrap gap-1" id="rapid-substance-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Tobacco / nicotine</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Alcohol</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Cannabis</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Stimulant</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Opioid</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Benzodiazepine misuse</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Other</span>
+              </div>
+              <input type="text" id="rapid_substance_details" placeholder="Type / amount / last use..." class="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Risk Screen (Rapid) -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-rose-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-rose-100 pb-2">
+            <h3 class="font-bold text-rose-900 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-rose-600 text-white flex items-center justify-center text-xs font-bold">3</span>
+              Risk Screen (Suicide, Harm, Neglect)
+            </h3>
+            <span class="text-[11px] font-semibold text-rose-600">Immediate Assessment</span>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5" id="rapid-risk-chips">
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-success px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">No current suicidal thoughts</span>
+            <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Passive death wish</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Suicidal ideation</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Intent</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Plan</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Access to means</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Preparatory behaviour</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Recent attempt</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">NSSI</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Thoughts of harming others</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Recent aggression</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Weapon access</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Self-neglect</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Vulnerability / exploitation</span>
+            <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 cursor-pointer">Absconding risk</span>
+          </div>
+
+          <!-- Risk Matrix -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 text-xs">
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+              <span class="block font-bold text-slate-700 mb-1">Suicide / Self-Harm:</span>
+              <select id="rapid_risk_suicide" class="w-full text-xs p-1.5 border rounded bg-white font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                <option value="Low">Low Risk</option>
+                <option value="Moderate">Moderate Risk</option>
+                <option value="High / Imminent">High / Imminent</option>
+              </select>
+            </div>
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+              <span class="block font-bold text-slate-700 mb-1">Violence to Others:</span>
+              <select id="rapid_risk_violence" class="w-full text-xs p-1.5 border rounded bg-white font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                <option value="Low">Low Risk</option>
+                <option value="Moderate">Moderate Risk</option>
+                <option value="High / Imminent">High / Imminent</option>
+              </select>
+            </div>
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+              <span class="block font-bold text-slate-700 mb-1">Self-Neglect / Vulnerability:</span>
+              <select id="rapid_risk_neglect" class="w-full text-xs p-1.5 border rounded bg-white font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                <option value="Low">Low Risk</option>
+                <option value="Moderate">Moderate Risk</option>
+                <option value="High / Imminent">High / Imminent</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Risk Formulation / Protective Factors</label>
+            <input type="text" id="rapid_risk_protective" placeholder="e.g. Good family support, reasons for living, cooperative with safety plan..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none">
+            <label class="block text-xs font-semibold text-rose-800 mt-2 mb-1">Basis for risk judgement <span class="text-rose-600">(required before copy/print)</span></label><textarea id="rapid_risk_rationale" rows="2" placeholder="Why this level? e.g. Passive SI, no plan/intent, no prior attempts, engaged with family, means restricted..." class="w-full px-3 py-1.5 text-xs bg-white border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-400 outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- 4. Relevant Background & 5. Rapid MSE -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-amber-500 text-white flex items-center justify-center text-xs font-bold">4-5</span>
+              Background & Mental State Examination
+            </h3>
+            <button onclick="prefillRapidNormalMSE()" class="text-xs px-2.5 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 rounded font-semibold transition">
+              <i class="fa-solid fa-check-double mr-1"></i> Grossly Normal MSE
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Past Psychiatric & Med History</label>
+              <textarea id="rapid_past_hx" rows="2" placeholder="Diagnoses, admissions, current meds, adherence, head injury, seizures..." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Family, Developmental & Social Hx</label>
+              <textarea id="rapid_social_hx" rows="2" placeholder="Family psychiatric/suicide hx, occupation, relationship, legal..." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+            </div>
+          </div>
+
+          <!-- Rapid MSE Checkboxes -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Mental State Examination Checkpoints</label>
+            <div class="flex flex-wrap gap-1 text-xs" id="rapid-mse-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Appearance appropriate</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Poor self-care</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Calm/cooperative</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Guarded</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Agitated/restless</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychomotor retardation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Speech normal</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Speech pressured</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Speech reduced</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Mood euthymic</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Mood depressed</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Mood anxious</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Mood irritable/elevated</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Affect reactive/full</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Affect restricted/blunted</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Thought goal-directed</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Thought disordered</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">No delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Delusion present</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">No hallucination</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Hallucination present</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Cognition grossly intact</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Cognitive concern</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Insight good</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Insight partial/poor</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Judgment intact</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Judgment impaired</span>
+            </div>
+            <input type="text" id="rapid_mse_details" placeholder="MSE specific notes, verbatim speech..." class="w-full mt-2 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          </div>
+        </div>
+
+        <!-- 6. Impression & Plan (Rapid) -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-amber-500 text-white flex items-center justify-center text-xs font-bold">6</span>
+            Impression & Plan (Rapid)
+          </h3>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Working Diagnosis / Differential</label>
+            <input type="text" id="rapid_dx" placeholder="e.g. Major Depressive Episode, Moderate; Diff: Bipolar Depression" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Management Checkpoints</label>
+            <div class="flex flex-wrap gap-1 text-xs" id="rapid-plan-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Outpatient management</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Admission considered</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Safety plan</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Family involvement</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Start medication</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Continue medication</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Adjust medication</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychological intervention</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychometric scale</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Laboratory investigations</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">ECG</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Referral/MDT</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Medical certificate</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Early follow-up</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Plan / Medication / Follow-Up Details</label>
+            <textarea id="rapid_plan_text" rows="2" placeholder="e.g. Tab Escitalopram 10mg OM. Safety plan formulated. Review in 2 weeks..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: PART 2 - COMPREHENSIVE ADULT PSYCHIATRY CLERKING -->
+      <!-- ======================================================== -->
+      <div id="view-comprehensive" class="space-y-4">
+        
+
+        <!-- Section A: Presenting Complaint & HPI -->
+        <div id="sec-hpi" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-sky-600 text-white flex items-center justify-center text-xs font-bold">A</span>
+              Presenting Complaint(s) & History of Presenting Illness
+            </h3>
+            <span class="text-[11px] text-slate-400">Onset, Course, Precipitants</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Presenting Complaint(s) and Duration</label>
+            <input type="text" id="comp_pc" placeholder="e.g. Low mood, loss of interest, insomnia and passive suicidal thoughts for 6 weeks" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Evolution & Course</label>
+            <div class="flex flex-wrap gap-1.5" id="comp-course-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Acute</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Subacute</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Insidious</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Continuous</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Episodic</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Fluctuating</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Progressive</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Improving</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Worsening</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Identified Precipitants / Stressors</label>
+            <div class="flex flex-wrap gap-1.5" id="comp-precipitant-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Relationship stress</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Family stress</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Work stress</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Financial stress</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Academic stress</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Bereavement</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Medical illness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Legal issue</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Trauma</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2.5 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">No clear precipitant</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Chronology, Precipitants, Perpetuating Factors and Functional Impact</label>
+            <textarea id="comp_hpi_narrative" rows="3" placeholder="Detailed chronological evolution of symptoms, biological functions (sleep, appetite, energy), coping, and functional disruption in work/daily activities..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"></textarea>
+            <p class="dictation-hint text-[11px] text-slate-400 mt-1" data-for="comp_hpi_narrative"><i class="fa-solid fa-microphone"></i> Tip: tap the microphone on your keyboard to dictate.</p>
+          </div>
+        </div>
+
+        <!-- Section B & C: Depressive Symptoms & Suicide/Self-Harm Assessment -->
+        <div id="sec-dep-suicide" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">B-C</span>
+              Depression & Suicide / Self-Harm Assessment
+            </h3>
+            <span class="text-xs text-rose-600 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>High-Priority Risk</span>
+          </div>
+
+          <!-- Depressive Checklist -->
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs font-semibold text-slate-700">Depressive Symptoms Checklist</label>
+              <input type="text" id="comp_dep_duration" placeholder="Duration / severity / impairment..." class="text-xs px-2.5 py-0.5 border rounded bg-slate-50 w-60 outline-none">
+            </div>
+            <div class="flex flex-wrap gap-1" id="comp-dep-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Depressed/sad mood</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Empty mood</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Irritability</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Tearfulness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Anhedonia</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Reduced energy</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Reduced motivation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Poor concentration</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Indecisiveness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Worthlessness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Excessive guilt</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Hopelessness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Helplessness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Social withdrawal</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Reduced self-care</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychomotor retardation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychomotor agitation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Initial insomnia</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Middle insomnia</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Early waking</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Hypersomnia</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Reduced appetite</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased appetite</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Weight loss</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Weight gain</span>
+            </div>
+          </div>
+
+          <!-- Suicide & Self-Harm Matrix -->
+          <div class="p-3.5 bg-rose-50/70 border border-rose-200 rounded-xl space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-rose-900">C. Suicide & Self-Harm Assessment</span>
+              <button onclick="prefillNoSuicideRisk()" class="text-[11px] font-semibold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 px-2 py-0.5 rounded">
+                <i class="fa-solid fa-shield-heart mr-1"></i> Mark No Current Suicide Thoughts
+              </button>
+            </div>
+
+            <div class="flex flex-wrap gap-1" id="comp-suicide-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-success px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">No suicidal thoughts</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Passive death wish</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Suicidal ideation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Intent</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Plan</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Preparatory behaviour</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Recent attempt</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">NSSI</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Access to means</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Previous attempt/self-harm</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-white cursor-pointer">Family history of suicide</span>
+            </div>
+
+            <div>
+              <input type="text" id="comp_suicide_details" placeholder="Current ideation, intent, plan, means, chronology..." class="w-full px-2.5 py-1 text-xs bg-white border border-rose-200 rounded outline-none">
+            </div>
+
+            <!-- Risk Factors & Protective Factors -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block font-semibold text-rose-900 mb-1">Identified Suicide Risk Factors</label>
+                <div class="flex flex-wrap gap-1" id="comp-suicide-rf-chips">
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Previous attempt</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Current depression</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Psychosis</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Substance use</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Impulsivity</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Recent loss</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Relationship conflict</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Chronic pain/illness</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Social isolation</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Financial/legal stress</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Access to lethal means</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block font-semibold text-emerald-900 mb-1">Protective Factors</label>
+                <div class="flex flex-wrap gap-1" id="comp-suicide-prot-chips">
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Family</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Children</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Religion/spirituality</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Future plans</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Therapeutic alliance</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Social support</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Help-seeking</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-emerald-200 bg-white cursor-pointer">Reasons for living</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1 border-t border-rose-200/60">
+              <span class="text-xs font-bold text-rose-900">Overall Stratified Suicide Risk:</span>
+              <select id="comp_suicide_level" class="text-xs font-bold px-2 py-1 rounded bg-white border border-rose-300 text-rose-800 outline-none">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                <option value="Low">Low Risk</option>
+                <option value="Moderate">Moderate Risk</option>
+                <option value="High">High Risk</option>
+                <option value="Imminent">Imminent Risk</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section D, E, F: Mania, Anxiety & OCD -->
+        <div id="sec-mania-anx-ocd" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-amber-500 text-white flex items-center justify-center text-xs font-bold">D-F</span>
+            Mania / Hypomania, Anxiety / Panic & OCD
+          </h3>
+
+          <!-- Mania -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-700">D. Mania / Hypomania</label>
+              <input type="text" id="comp_mania_notes" placeholder="Duration / impairment / previous episodes..." class="text-xs px-2 py-0.5 border rounded bg-slate-50 w-60 outline-none">
+            </div>
+            <div class="flex flex-wrap gap-1" id="comp-mania-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Elevated mood</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Irritable mood</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased energy/activity</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Reduced need for sleep</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased talkativeness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Pressured speech</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Racing thoughts</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Flight of ideas</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased confidence</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Grandiosity</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased goal-directed activity</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Distractibility</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased spending</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Risk-taking</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased sexual activity</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Increased sociability</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Disinhibition</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychotic symptoms</span>
+            </div>
+          </div>
+
+          <!-- Anxiety / Panic / Phobia -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-700">E. Anxiety / Panic / Phobia</label>
+              <input type="text" id="comp_anx_notes" placeholder="Frequency / trigger / avoidance / impairment..." class="text-xs px-2 py-0.5 border rounded bg-slate-50 w-60 outline-none">
+            </div>
+            <div class="flex flex-wrap gap-1" id="comp-anx-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Excessive worry</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Difficulty controlling worry</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Restlessness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Muscle tension</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Irritability</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Poor concentration</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Fatigue</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Sleep disturbance</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Panic attacks</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Palpitations</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Sweating</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Trembling</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Shortness of breath</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Chest discomfort</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Dizziness</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Derealisation/depersonalisation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Fear of dying</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Fear of losing control</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Social anxiety</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Agoraphobia</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Specific phobia</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Avoidance</span>
+            </div>
+          </div>
+
+          <!-- OCD -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-700">F. Obsessive-Compulsive Symptoms</label>
+              <input type="text" id="comp_ocd_notes" placeholder="Time occupied / distress / interference / insight..." class="text-xs px-2 py-0.5 border rounded bg-slate-50 w-60 outline-none">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div>
+                <span class="block text-[11px] font-semibold text-slate-500 mb-1">Obsessions:</span>
+                <div class="flex flex-wrap gap-1" id="comp-ocd-obs-chips">
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Contamination</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Doubt/checking</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Aggressive</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Sexual</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Religious/scrupulosity</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Symmetry/order</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Somatic</span>
+                </div>
+              </div>
+              <div>
+                <span class="block text-[11px] font-semibold text-slate-500 mb-1">Compulsions:</span>
+                <div class="flex flex-wrap gap-1" id="comp-ocd-comp-chips">
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Washing/cleaning</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Checking</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Repeating</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Counting</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Ordering/arranging</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Mental rituals</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Reassurance seeking</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Avoidance</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section G, H, I, J: Psychosis, Trauma, ADHD & Eating -->
+        <div id="sec-psych-trauma-adhd" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-teal-600 text-white flex items-center justify-center text-xs font-bold">G-J</span>
+            Psychosis, Trauma (PTSD), ADHD & Eating-Related Symptoms
+          </h3>
+
+          <!-- Psychotic Symptoms -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-700">G. Psychotic Symptoms (Hallucinations, Delusions, Passivity, Thought Disorder)</label>
+              <input type="text" id="comp_psych_notes" placeholder="Phenomenology, onset, conviction, behavioural consequences..." class="text-xs px-2 py-0.5 border rounded bg-slate-50 w-72 outline-none">
+            </div>
+            <div class="flex flex-wrap gap-1" id="comp-psych-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Auditory hallucination</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Visual hallucination</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Tactile</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Olfactory</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Gustatory</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Second person voice</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Third person voice</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Running commentary</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Voices discussing patient</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Command hallucination</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Persecutory delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Referential delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Grandiose delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Religious delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Somatic delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Jealous delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Erotomanic delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Nihilistic delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Delusion of guilt</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Thought insertion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Thought withdrawal</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Thought broadcasting</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Passivity phenomenon</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Delusional perception</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Loosening</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Tangentiality</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Circumstantiality</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Thought blocking</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Neologism</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Incoherence</span>
+            </div>
+          </div>
+
+          <!-- Trauma / PTSD / Dissociation -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-700">H. Trauma / PTSD / Dissociation</label>
+              <input type="text" id="comp_trauma_notes" placeholder="Trauma history and symptom chronology..." class="text-xs px-2 py-0.5 border rounded bg-slate-50 w-72 outline-none">
+            </div>
+            <div class="flex flex-wrap gap-1" id="comp-trauma-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Traumatic exposure</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Intrusive memories</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Nightmares</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Flashbacks</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Negative beliefs</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Distress to reminders</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Guilt/self-blame</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Avoidance</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Emotional numbing</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Hypervigilance</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Exaggerated startle</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Sleep disturbance</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Dissociation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 text-xs rounded border border-slate-200 bg-slate-50 cursor-pointer">Irritability</span>
+            </div>
+          </div>
+
+          <!-- ADHD / Neurodevelopmental Screen -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-700">I. ADHD / Neurodevelopmental Screen</label>
+              <input type="text" id="comp_adhd_notes" placeholder="Collateral / school history / developmental context..." class="text-xs px-2 py-0.5 border rounded bg-slate-50 w-72 outline-none">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div>
+                <span class="block text-[11px] font-semibold text-slate-500 mb-1">Inattention:</span>
+                <div class="flex flex-wrap gap-1" id="comp-adhd-inatt-chips">
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Careless mistakes</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Sustaining attention</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Appears not to listen</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Incomplete tasks</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Disorganised</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Avoids sustained effort</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Loses things</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Easily distracted</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Forgetful</span>
+                </div>
+              </div>
+              <div>
+                <span class="block text-[11px] font-semibold text-slate-500 mb-1">Hyperactivity / Impulsivity:</span>
+                <div class="flex flex-wrap gap-1" id="comp-adhd-hyp-chips">
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Fidgeting</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Difficulty remaining seated</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Restlessness</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Difficulty engaging quietly</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">On the go</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Talks excessively</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Blurts answers</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Waiting turn</span>
+                  <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Interrupts</span>
+                </div>
+              </div>
+            </div>
+            <div class="pt-1">
+              <span class="block text-[11px] font-semibold text-slate-500 mb-1">Criteria & Functional Impairment:</span>
+              <div class="flex flex-wrap gap-1 text-xs" id="comp-adhd-impact-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Symptoms before age 12</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Home impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">School impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Work impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Social impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Relationship impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Financial impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Emotional dysregulation</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Driving impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Daily organisation</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- J. Eating-Related Symptoms -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-700">J. Eating-Related Symptoms</label>
+              <input type="text" id="comp_eating_details" placeholder="Details of intake, purging, body weight..." class="text-xs px-2 py-0.5 border rounded bg-slate-50 w-72 outline-none">
+            </div>
+            <div class="flex flex-wrap gap-1 text-xs" id="comp-eating-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">No concern</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Restrictive eating</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Binge eating</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Self-induced vomiting</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Laxative misuse</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Excessive exercise</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Fear of weight gain</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Body image disturbance</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section K & L: Substance Use & Aggression / Violence Risk -->
+        <div id="sec-substance-violence" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-orange-600 text-white flex items-center justify-center text-xs font-bold">K-L</span>
+            Substance Use History & Aggression / Violence Risk
+          </h3>
+
+          <!-- Substance Use -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-slate-700">K. Substance Use Inquiry</label>
+              <div id="comp-sub-withdrawal" class="flex items-center gap-1 text-[11px]">
+                <span class="text-slate-500">Withdrawal/complications:</span>
+                <span onclick="selectSingleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No</span>
+                <span onclick="selectSingleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Yes</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1 text-xs" id="comp-substance-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Tobacco/nicotine</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Alcohol</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Cannabis</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Methamphetamine</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Amphetamine</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">MDMA</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Opioid</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Benzodiazepine misuse</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Ketamine</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Cocaine</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Hallucinogen</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Other</span>
+            </div>
+            <input type="text" id="comp_substance_details" placeholder="Status (Never / Current / Ex-user), pattern, amount, last intake, dependence criteria..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          </div>
+
+          <!-- Violence Risk -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-slate-700">L. Aggression / Violence Risk Assessment</label>
+              <div class="flex items-center gap-1 text-xs font-semibold">
+                <span class="text-slate-600">Overall Violence Risk:</span>
+                <select id="comp_violence_level" class="p-1 rounded border border-slate-200 bg-white">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low Risk</option>
+                  <option value="Moderate">Moderate Risk</option>
+                  <option value="High">High Risk</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1 text-xs" id="comp-violence-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-success px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">No current concern</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Recent aggression</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Impulsivity</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Threats</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Thoughts of harming others</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Previous violence</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Weapon access</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Command hallucination</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Persecutory delusion</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-warning px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Substance-related aggression</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Identified target</span>
+            </div>
+            <input type="text" id="comp_violence_details" placeholder="Target, intent, plan, access, protective factors..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          </div>
+        </div>
+
+        <!-- Section M-R: Past Psychiatric, Medical, Family, Developmental & Social -->
+        <div id="sec-past-background" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-slate-700 text-white flex items-center justify-center text-xs font-bold">M-R</span>
+            Past History, Family, Personal, Social & Forensic
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <!-- Past Psychiatric -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">M. Past Psychiatric & Treatment History</span>
+              <div class="flex flex-wrap gap-1" id="comp-past-dx-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No previous diagnosis</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Depression</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Bipolar</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Anxiety</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">OCD</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">PTSD</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Schizophrenia</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">ADHD</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Substance use</span>
+              </div>
+              <textarea id="comp_past_psych" rows="2" placeholder="Admissions, past meds (dose, response, side effects), psychotherapy, ECT, adherence..." class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded outline-none"></textarea>
+            </div>
+
+            <!-- Medical / Surgical -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">N. Medical / Surgical History & Allergies</span>
+              <div class="flex flex-wrap gap-1" id="comp-med-hx-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No significant illness</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Hypertension</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Diabetes</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Thyroid</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Epilepsy</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Head injury</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Chronic pain</span>
+              </div>
+              <textarea id="comp_medical_hx" rows="2" placeholder="Surgical history, current non-psychiatric medications, ALLERGIES (NKDA?)..." class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded outline-none"></textarea>
+            </div>
+
+            <!-- Family History -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">O. Family Psychiatric & Suicide History</span>
+              <div class="flex flex-wrap gap-1" id="comp-fam-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No known psychiatric illness</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Depression</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Bipolar</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Psychosis</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Suicide / self-harm</span>
+              </div>
+              <input type="text" id="comp_family_details" placeholder="Affected relatives, pedigree, relationship quality..." class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded outline-none">
+            </div>
+
+            <!-- Personal / Developmental -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">P. Personal, Developmental & Childhood</span>
+              <div class="flex flex-wrap gap-1" id="comp-dev-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Birth unremarkable</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Normal milestones</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Stable childhood</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Parental separation</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Bullying</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Abuse (physical/emotional/sexual)</span>
+              </div>
+              <input type="text" id="comp_personal_details" placeholder="Developmental history, childhood adversity..." class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded outline-none">
+            </div>
+          </div>
+
+          <!-- Q & R: Social, Forensic & Premorbid Personality -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Q. Educational, Occupational & Social History</label>
+              <textarea id="comp_social_hx" rows="2" placeholder="Highest qualification, current job status, relationship stability, finances, accommodation..." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">R. Forensic History & Premorbid Personality</label>
+              <div class="flex flex-wrap gap-1 mb-1" id="comp-personality-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">No forensic history</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Sociable</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Reserved</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Perfectionistic</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Sensitive</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Impulsive</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Anxious</span>
+              </div>
+              <input type="text" id="comp_forensic_details" placeholder="Forensic details (arrests, charges) or personality traits..." class="w-full px-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section S: Full Mental State Examination (MSE) -->
+        <div id="sec-mse" class="bg-white rounded-2xl p-4 sm:p-5 border border-sky-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-sky-100 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-sky-600 text-white flex items-center justify-center text-xs font-bold">S</span>
+              <h3 class="font-bold text-slate-900 text-sm">Comprehensive Mental State Examination (MSE)</h3>
+            </div>
+            <button onclick="prefillFullNormalMSE()" class="text-xs px-2.5 py-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 rounded font-semibold transition flex items-center gap-1">
+              <i class="fa-solid fa-check-double"></i> Quick-Fill Grossly Normal MSE
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <!-- 1. Appearance & Behaviour -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">1. Appearance, Behaviour & Eye Contact</span>
+              <div class="flex flex-wrap gap-1" id="full-mse-app-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Well/fairly groomed</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Poorly groomed/dishevelled</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Calm/cooperative</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Guarded/suspicious</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Hostile</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Agitated/restless</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Withdrawn/disinhibited</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Tearful</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Good eye contact</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Poor/avoidant eye contact</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Rapport easily established</span>
+              </div>
+            </div>
+
+            <!-- 2. Psychomotor & Speech -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">2. Psychomotor & Speech</span>
+              <div class="flex flex-wrap gap-1" id="full-mse-speech-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Normal psychomotor</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Psychomotor retardation</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Agitation</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Speech normal rate/volume</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Rapid/pressured speech</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Slow speech</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Soft volume</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Poverty of speech</span>
+              </div>
+            </div>
+
+            <!-- 3. Mood & Affect -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">3. Mood (Subjective) & Affect (Objective)</span>
+              <div class="flex gap-1.5 items-center mb-1">
+                <span class="text-slate-500 text-[11px] shrink-0">Subjective:</span>
+                <input type="text" id="full_mse_subj_mood" placeholder="'I feel down and overwhelmed'" class="w-full px-2 py-0.5 text-xs bg-white border border-slate-200 rounded">
+              </div>
+              <div class="flex flex-wrap gap-1" id="full-mse-mood-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Euthymic</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Depressed</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Anxious</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Irritable</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Elevated</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Affect reactive/full</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Restricted/blunted</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Labile</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Congruent</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Incongruent</span>
+              </div>
+            </div>
+
+            <!-- 4. Thought & Perception -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <span class="font-bold text-slate-800">4. Thought Form, Content & Perception</span>
+              <div class="flex flex-wrap gap-1" id="full-mse-thought-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Form goal-directed</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Circumstantial</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Tangential</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Flight of ideas</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No delusion</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Delusion present</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No hallucination</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Auditory hallucination</span>
+              </div>
+            </div>
+
+            <!-- 5. Cognition, Insight & Judgment -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 md:col-span-2">
+              <span class="font-bold text-slate-800">5. Sensorium, Cognition, Insight & Judgment</span>
+              <div class="flex flex-wrap gap-1" id="full-mse-insight-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Alert & oriented x3</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Attention intact</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Immediate/recent/remote memory intact</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Cognitive concern</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Insight good</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Insight partial</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Insight poor/absent</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Judgment intact</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Judgment impaired</span>
+              </div>
+            </div>
+          </div>
+          <input type="text" id="full_mse_notes" placeholder="Additional MSE notes or specific verbatim quotes..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none">
+            <p class="dictation-hint text-[11px] text-slate-400 mt-1" data-for="full_mse_notes"><i class="fa-solid fa-microphone"></i> Tip: tap the microphone on your keyboard to dictate.</p>
+        </div>
+
+        <!-- Section T, U, V, W, X: Physical, Functional, 4Ps Formulation, Diagnosis & 7-Domain Risk Matrix -->
+        <div id="sec-formulation-mgmt" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-indigo-700 text-white flex items-center justify-center text-xs font-bold">T-X</span>
+            Investigations, Biopsychosocial Formulation (4Ps), Diagnoses & Risk
+          </h3>
+
+          <!-- T: Vitals & Psychometric Scales -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-0.5">BP & Pulse</label>
+              <input type="text" id="comp_vitals_bp" placeholder="e.g. 120/80, HR 76" class="w-full px-2 py-1 bg-white border border-slate-200 rounded">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-0.5">Weight / BMI</label>
+              <input type="text" id="comp_vitals_bmi" placeholder="e.g. 62 kg, BMI 22.4" class="w-full px-2 py-1 bg-white border border-slate-200 rounded">
+            </div>
+            <div class="col-span-2">
+              <label class="block font-semibold text-slate-600 mb-0.5">Psychometrics (PHQ-9, GAD-7, MoCA, etc.)</label>
+              <input type="text" id="comp_psychometrics" placeholder="e.g. PHQ-9: 18/27 (Mod-Severe); GAD-7: 12/21" class="w-full px-2 py-1 bg-white border border-slate-200 rounded">
+            </div>
+          </div>
+
+          <!-- V: 4Ps Biopsychosocial Matrix -->
+          <div class="space-y-2">
+            <span class="block text-xs font-bold text-slate-800">V. Biopsychosocial Formulation (4Ps)</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div class="p-2.5 bg-sky-50/70 border border-sky-200 rounded-xl space-y-1">
+                <span class="font-bold text-sky-900 flex items-center gap-1"><i class="fa-solid fa-seedling text-sky-600"></i> Predisposing</span>
+                <textarea id="form_predisposing" rows="2" placeholder="Bio: genetic loading, temperament; Psycho: early trauma, coping; Social: socioeconomic..." class="w-full px-2 py-1 bg-white border border-sky-200 rounded outline-none"></textarea>
+              </div>
+              <div class="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1">
+                <span class="font-bold text-amber-900 flex items-center gap-1"><i class="fa-solid fa-bolt text-amber-600"></i> Precipitating</span>
+                <textarea id="form_precipitating" rows="2" placeholder="Bio: physical illness, insomnia; Psycho: acute loss; Social: work crisis, relationship..." class="w-full px-2 py-1 bg-white border border-amber-200 rounded outline-none"></textarea>
+              </div>
+              <div class="p-2.5 bg-rose-50/70 border border-rose-200 rounded-xl space-y-1">
+                <span class="font-bold text-rose-900 flex items-center gap-1"><i class="fa-solid fa-repeat text-rose-600"></i> Perpetuating</span>
+                <textarea id="form_perpetuating" rows="2" placeholder="Bio: ongoing sleep disruption, substance misuse; Psycho: cognitive distortions; Social: conflict..." class="w-full px-2 py-1 bg-white border border-rose-200 rounded outline-none"></textarea>
+              </div>
+              <div class="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
+                <span class="font-bold text-emerald-900 flex items-center gap-1"><i class="fa-solid fa-shield-heart text-emerald-600"></i> Protective</span>
+                <textarea id="form_protective" rows="2" placeholder="Bio: good prior treatment response; Psycho: insight, help-seeking; Social: supportive family..." class="w-full px-2 py-1 bg-white border border-emerald-200 rounded outline-none"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- W: Diagnoses -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">W. Primary Working Diagnosis (DSM-5-TR / ICD-11)</label>
+              <input type="text" id="comp_primary_dx" placeholder="e.g. Major Depressive Disorder, recurrent episode, severe (DSM-5-TR F33.2)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-900 outline-none">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-800 mb-1">Differential Diagnoses & Comorbidities</label>
+              <input type="text" id="comp_diff_dx" placeholder="e.g. Bipolar II Disorder (depressed), Generalized Anxiety Disorder" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+            </div>
+          </div>
+
+          <!-- X: 7-Domain Comprehensive Risk Assessment Table -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+            <span class="font-bold text-slate-800">X. Risk Assessment Summary Matrix (7 Domains)</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <span class="text-[11px] text-slate-500 block">1. Suicide <em>(set in C)</em>:</span>
+                <select id="matrix_suicide" disabled title="Mirrors section C. Change the rating there." class="w-full p-1 bg-slate-100 border rounded text-xs font-semibold cursor-not-allowed">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500 block">2. Self-Harm:</span>
+                <select id="matrix_selfharm" class="w-full p-1 bg-white border rounded text-xs font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500 block">3. Violence <em>(set in L)</em>:</span>
+                <select id="matrix_violence" disabled title="Mirrors section L. Change the rating there." class="w-full p-1 bg-slate-100 border rounded text-xs font-semibold cursor-not-allowed">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500 block">4. Self-Neglect:</span>
+                <select id="matrix_neglect" class="w-full p-1 bg-white border rounded text-xs font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500 block">5. Vulnerability:</span>
+                <select id="matrix_vulnerability" class="w-full p-1 bg-white border rounded text-xs font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500 block">6. Absconding:</span>
+                <select id="matrix_absconding" class="w-full p-1 bg-white border rounded text-xs font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+              <div class="col-span-2">
+                <span class="text-[11px] text-slate-500 block">7. Substance-related Harm:</span>
+                <select id="matrix_substance_harm" class="w-full p-1 bg-white border rounded text-xs font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Imminent">Imminent</option>
+                </select>
+              </div>
+            </div>
+            <input type="text" id="matrix_immediate_action" placeholder="Risk formulation / immediate action..." class="w-full px-2.5 py-1 text-xs bg-white border border-slate-200 rounded outline-none">
+            <label class="block text-xs font-semibold text-rose-800 mt-2 mb-1">Basis for risk judgement <span class="text-rose-600">(required before copy/print)</span></label><textarea id="comp_risk_rationale" rows="2" placeholder="Formulation behind the ratings above: static/dynamic factors, what would change the risk, how it is being managed..." class="w-full px-3 py-1.5 text-xs bg-white border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-400 outline-none"></textarea>
+          </div>
+
+          <!-- Y: Management Plan -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <span class="block text-xs font-bold text-slate-800">Y. Comprehensive Multimodal Management Plan</span>
+            <div class="flex flex-wrap gap-1 text-xs" id="comp-mgmt-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Outpatient management</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychiatric admission</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Voluntary admission</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Involuntary admission considered</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Suicide precautions</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Safety plan formulated</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Family supervision</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Start medication</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Adjust medication</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Psychoeducation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Supportive psychotherapy</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">CBT referral</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Sleep intervention</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Baseline labs (FBC/Renal/Liver/TFT)</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Medical certificate</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Early follow-up</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Medication / Biological Regimen</label>
+                <textarea id="comp_rx_plan" rows="2" placeholder="e.g. Tab. Escitalopram 10mg OM. Tab. Zolpidem 5mg PRN nocte for max 5 nights." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Psychosocial, Safety Plan & Follow-Up</label>
+                <textarea id="comp_psycho_plan" rows="2" placeholder="e.g. Crisis contact numbers given, husband in custody of meds. Review in 2 weeks..." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 3: PART 3 - ADULT PSYCHIATRY FOLLOW-UP / REVIEW     -->
+      <!-- ======================================================== -->
+      <div id="view-followup" class="hidden space-y-4">
+        
+        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-emerald-900 text-xs">
+          <i class="fa-solid fa-arrows-rotate text-emerald-600 text-base"></i>
+          <span><strong>Part 3 Follow-Up Mode:</strong> Tailored for progress assessment, medication tolerability, residual symptom inquiry, interval safety review, and plan update.</span>
+        </div>
+
+        <!-- 1. Interval Progress -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">1</span>
+            Interval Progress Since Last Review
+          </h3>
+
+          <div class="flex flex-wrap gap-1.5" id="fu-progress-chips">
+            <span onclick="selectSingleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Much improved</span>
+            <span onclick="selectSingleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Improved</span>
+            <span onclick="selectSingleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Partially improved</span>
+            <span onclick="selectSingleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">No significant change</span>
+            <span onclick="selectSingleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Worsened</span>
+            <span onclick="selectSingleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">Relapsed</span>
+            <span onclick="toggleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">New stressor</span>
+            <span onclick="toggleChip(this)" class="chip-toggle px-3 py-1 text-xs rounded-full border border-slate-200 bg-slate-50 cursor-pointer">New functional impairment</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Patient / Collateral Report Since Last Review</label>
+            <textarea id="fu_interval_text" rows="2" placeholder="e.g. Sleep improved to 6 hours uninterrupted. Back to work full-time. Mood is brighter..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+            <p class="dictation-hint text-[11px] text-slate-400 mt-1" data-for="fu_interval_text"><i class="fa-solid fa-microphone"></i> Tip: tap the microphone on your keyboard to dictate.</p>
+          </div>
+        </div>
+
+        <!-- 2. Current Symptom Review & 3. Risk Review -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">2-3</span>
+            Current Symptom Review & Interval Risk Status
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="font-bold text-slate-700">Mood & Sleep:</span>
+              <div class="flex flex-wrap gap-1" id="fu-mood-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Euthymic</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Low mood</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Anhedonia</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Irritable</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Sleep good</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Insomnia</span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="font-bold text-slate-700">Anxiety, Psychosis & Function:</span>
+              <div class="flex flex-wrap gap-1" id="fu-symptom-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Minimal anxiety</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Nil psychosis</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Function good</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Mild impairment</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Moderate impairment</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Risk Review -->
+          <div class="p-3 bg-rose-50/50 border border-rose-200 rounded-xl space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-rose-900">Follow-Up Risk Stratification:</span>
+              <div class="flex items-center gap-2">
+                <span class="text-slate-600 font-semibold">Suicide/Harm:</span>
+                <select id="fu_risk_suicide" class="p-1 border rounded bg-white text-xs font-semibold">
+                  <option value="Not assessed" selected>— Not assessed —</option>
+                  <option value="Unable to assess">Unable to assess</option>
+                  <option value="Low">Low Risk</option>
+                  <option value="Moderate">Moderate Risk</option>
+                  <option value="High / Imminent">High / Imminent</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1" id="fu-risk-chips">
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-success px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">No suicidal thoughts</span>
+              <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Passive death wish</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-danger px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Suicidal ideation</span>
+              <span onclick="toggleChip(this)" class="chip-toggle chip-toggle-success px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer">Safety plan intact</span>
+            </div>
+            <label class="block text-xs font-semibold text-rose-800 mt-2 mb-1">Basis for risk judgement <span class="text-rose-600">(required before copy/print)</span></label><textarea id="fu_risk_rationale" rows="2" placeholder="Why this level today? What has changed since last review?" class="w-full px-3 py-1.5 text-xs bg-white border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-400 outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- 4. Medication Review & Tolerability -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">4</span>
+            Medication Review & Adverse Effect Screen
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Current Medication & Adherence</label>
+              <textarea id="fu_meds_text" rows="2" placeholder="e.g. Tab. Escitalopram 10mg OM. Adherence: Good (>90%). Benefit noted." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Reported Adverse Effects</label>
+              <div class="flex flex-wrap gap-1" id="fu-side-effect-chips">
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">No adverse effects</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Sedation</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Insomnia</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">GI symptoms</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Sexual dysfunction</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Weight change</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">EPS / akathisia</span>
+                <span onclick="toggleChip(this)" class="chip-toggle px-2 py-0.5 rounded border border-slate-200 bg-slate-50 cursor-pointer">Dizziness</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Assessment & Updated Plan</label>
+            <textarea id="fu_plan_text" rows="2" placeholder="e.g. Maintain current dose. Continue CBT. Next review in 6 weeks." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- RIGHT PANE: Generated Documentation & Export (5 of 12 columns) -->
+    <aside id="note-pane" class="lg:col-span-5 space-y-4">
+
+      <!-- Output Configuration Card (Sticky) -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3.5 sticky top-20">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-file-signature text-sky-600 text-lg"></i>
+            <h3 class="font-bold text-slate-900 text-sm">Generated Documentation</h3>
+          </div>
+          <span class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Live Synced
+          </span>
+        </div>
+
+        <!-- Format Selector (EMR Note, Full Clerking, Clinic Letter) -->
+        <div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+          <button id="format-emr" onclick="setDocFormat('emr')" class="py-1.5 px-2 rounded-lg bg-white text-sky-700 shadow-sm transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-laptop-medical text-xs"></i> EMR Note
+          </button>
+          <button id="format-report" onclick="setDocFormat('report')" class="py-1.5 px-2 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-file-lines text-xs"></i> Full Clerking
+          </button>
+          <button id="format-letter" onclick="setDocFormat('letter')" class="py-1.5 px-2 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-envelope-open-text text-xs"></i> Clinic Letter
+          </button>
+        </div>
+
+        <!-- Quick Actions: Copy, Print, Download -->
+        <div class="flex gap-2">
+          <button onclick="copyGeneratedNote()" class="flex-1 py-2 px-3 bg-sky-50 hover:bg-sky-100 active:bg-sky-200 text-sky-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-sky-200">
+            <i class="fa-solid fa-copy"></i>
+            <span id="copy-btn-text">Copy Note</span>
+          </button>
+          <button onclick="printFormalReport()" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-300" title="Print or save as PDF">
+            <i class="fa-solid fa-print"></i>
+            <span>Print / PDF</span>
+          </button>
+          <button id="done-btn" onclick="markDone()" class="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition border border-emerald-200 flex items-center gap-1.5" title="After pasting into the EMR: delete this draft">
+            <i class="fa-solid fa-check"></i> Done
+          </button>
+        </div>
+
+        <!-- Consistency prompts (never part of the note text) -->
+        <div id="consistency-panel" style="display:none" class="mb-2 p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-xs">
+          <div class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation"></i> Consistency checks (<span id="consistency-count">0</span>)</div>
+          <ul id="consistency-list" class="list-disc pl-4 space-y-0.5"></ul>
+          <div class="mt-1.5 text-[11px] text-amber-700">These are prompts, not errors. Fix the entry, or explain it in "Basis for risk judgement". You'll be asked to confirm before copy/print.</div>
+        </div>
+
+        <!-- Monospace Output Screen -->
+        <div class="relative">
+          <textarea id="output-textarea" readonly rows="25" class="w-full p-3.5 text-xs font-mono bg-slate-900 text-slate-100 rounded-xl leading-relaxed focus:outline-none resize-none border border-slate-800 shadow-inner" placeholder="Fill in the clerking fields on the left and click 'Generate Note' or 'Sample Case' to generate clean psychiatric documentation..."></textarea>
+          
+          <div class="absolute bottom-2.5 right-2.5 text-[10px] text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded backdrop-blur">
+            <span id="char-count">0</span> characters
+          </div>
+        </div>
+
+        <!-- Confidentiality Notice -->
+        <div class="text-[11px] text-slate-500 flex items-center justify-between pt-1">
+          <span class="flex items-center gap-1"><i class="fa-solid fa-shield-halved text-emerald-600"></i> Runs in this browser only · drafts stay on this device</span>
+          <span class="text-slate-400 font-mono text-[10px]">Package v3.0</span>
+        </div>
+
+      </div>
+
+    </aside>
+
+  </main>
+
+  <div id="bottom-bar" class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 px-2 py-2 grid grid-cols-4 gap-1.5 text-[11px] font-bold">
+    <button onclick="generateNotes(); setPhoneTab('note')" class="py-2.5 rounded-lg bg-sky-700 text-white"><i class="fa-solid fa-file-waveform block text-base"></i>Note</button>
+    <button onclick="copyGeneratedNote()" class="py-2.5 rounded-lg bg-sky-50 text-sky-800 border border-sky-200"><i class="fa-solid fa-copy block text-base"></i>Copy</button>
+    <button onclick="markDone()" class="py-2.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-check block text-base"></i>Done</button>
+    <button onclick="endSession()" class="py-2.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200"><i class="fa-solid fa-right-from-bracket block text-base"></i>End</button>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <!-- Patients drawer (app chrome: never captured into a draft) -->
+  <div id="patients-drawer" data-no-capture style="display:none" class="fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-slate-900/40" onclick="closePatients()"></div>
+    <aside class="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl flex flex-col">
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h2 class="font-bold text-slate-900 text-sm">Patients on this device</h2>
+          <p class="text-[11px] text-slate-500"><span id="device-type-text"></span> · <button class="underline" onclick="openDeviceModal()">change</button></p>
+        </div>
+        <button onclick="closePatients()" class="w-9 h-9 rounded-lg hover:bg-slate-100" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 border-b border-slate-100 space-y-1">
+        <label for="draft-label-input" class="block text-[11px] font-semibold text-slate-600">Label for the open patient (not their name)</label>
+        <input id="draft-label-input" maxlength="30" placeholder="Bed 12 · AB" onchange="renameActive(this.value)" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg">
+      </div>
+      <div id="patients-list" class="flex-1 overflow-y-auto p-4"></div>
+      <div class="p-4 border-t border-slate-200 space-y-2">
+        <div class="flex gap-2">
+          <input id="new-patient-label" maxlength="30" placeholder="Bed 12 · AB" class="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg">
+          <button id="new-patient-btn" onclick="newPatient()" class="px-3 py-2 text-sm font-bold text-white bg-sky-700 hover:bg-sky-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-plus"></i> New patient</button>
+        </div>
+        <p id="draft-limit-msg" style="display:none" class="text-[11px] text-rose-700 font-semibold">Limit of 10: mark a patient Done first.</p>
+        <button onclick="endSession()" class="w-full py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg"><i class="fa-solid fa-right-from-bracket"></i> End session: delete all drafts</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- First-run device type -->
+  <div id="device-modal" data-no-capture style="display:none" class="fixed inset-0 z-[60] bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 shadow-xl">
+      <h2 class="font-bold text-slate-900">Whose device is this?</h2>
+      <p class="text-xs text-slate-600">Patient drafts are saved only on this device and deleted automatically.</p>
+      <button id="device-own" onclick="setDevice('own')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-sky-500 hover:bg-sky-50">
+        <span class="block font-semibold text-sm text-slate-900"><i class="fa-solid fa-mobile-screen"></i> My own phone or laptop</span>
+        <span class="block text-xs text-slate-500">Drafts kept 24 hours after last edit</span>
+      </button>
+      <button id="device-shared" onclick="setDevice('shared')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-sky-500 hover:bg-sky-50">
+        <span class="block font-semibold text-sm text-slate-900"><i class="fa-solid fa-desktop"></i> Shared ward PC</span>
+        <span class="block text-xs text-slate-500">Drafts kept 12 hours after last edit</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- My phrases (app chrome) -->
+  <button id="phrases-btn" data-no-capture type="button" style="display:none; position:fixed" class="z-40 px-2 py-1 rounded-md bg-sky-700 text-white text-[11px] font-bold shadow" title="Insert a saved phrase"><i class="fa-solid fa-quote-left"></i> Phrases</button>
+  <div id="phrases-popover" data-no-capture style="display:none" class="fixed z-50 inset-x-2 bottom-20 lg:inset-x-auto lg:right-6 lg:bottom-auto lg:top-24 lg:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-bold text-sm text-slate-900">My phrases</h2>
+      <button onclick="closePhrases()" class="w-8 h-8 rounded-lg hover:bg-slate-100" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="phrases-list" class="max-h-64 overflow-y-auto"></div>
+    <div class="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+      <input id="new-phrase-input" maxlength="500" placeholder="Save a new phrase…" class="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-200 rounded-lg">
+      <button id="save-phrase-btn" onclick="saveNewPhrase()" class="px-3 py-2 text-sm font-bold text-white bg-sky-700 rounded-lg">Save</button>
+    </div>
+    <p class="text-[11px] text-slate-400 mt-1.5">Saved on this device only. Don't save patient details here.</p>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 border border-slate-700">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+      <span id="toast-msg" class="font-medium">Note copied to clipboard!</span>
+    </div>
+  </div>
+
+  <!-- Custom Safe Modal (Replaces alert/confirm) -->
+  <div id="custom-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        </div>
+        <div>
+          <h4 id="modal-title" class="font-bold text-slate-900 text-sm">Clear Clerking Form?</h4>
+          <p id="modal-desc" class="text-xs text-slate-500 mt-0.5">All entered clinical information will be wiped.</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeCustomModal()" class="px-3.5 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">Cancel</button>
+        <button id="modal-confirm-btn" class="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition shadow-sm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Printable Report Container -->
+  <div id="print-report-container" class="hidden"></div>
+
+  <script src="js/notes.js"></script>
+  <script src="js/drafts-store.js"></script>
+  <script src="js/form-state.js"></script>
+  <script src="js/drafts-ui.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/phrases.js"></script>
+  <script src="js/sw-register.js"></script>
+</body>
+</html>
