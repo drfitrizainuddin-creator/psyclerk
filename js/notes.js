@@ -91,13 +91,13 @@
       const badge = document.getElementById('active-mode-badge');
       if (mode === 'rapid') {
         badge.textContent = 'Part 1: Rapid Checklist';
-        badge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200';
+        badge.className = 'phone-hide text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200';
       } else if (mode === 'comprehensive') {
         badge.textContent = 'Part 2: Comprehensive Clerking';
-        badge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-sky-100 text-sky-800 border border-sky-200';
+        badge.className = 'phone-hide text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-sky-100 text-sky-800 border border-sky-200';
       } else {
         badge.textContent = 'Part 3: Follow-Up Review';
-        badge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+        badge.className = 'phone-hide text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
       }
 
       generateNotes();

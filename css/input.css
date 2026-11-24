@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Collapsible section cards: only the header row shows when collapsed */
+[data-collapsed="1"] > :not([data-section-head]) { display: none !important; }
+[data-section-head] { user-select: none; }
+[data-section] { scroll-margin-top: 8.5rem; }
+
+@media (max-width: 1023px) {
+  .phone-hide { display: none !important; }
+  body { padding-bottom: 76px; }
+  #toast { bottom: 88px !important; }
+  body[data-phone-tab="note"] #form-pane { display: none; }
+  body:not([data-phone-tab="note"]) #note-pane { display: none; }
+  .chip-toggle { min-height: 40px; display: inline-flex; align-items: center; }
+  [data-section] { scroll-margin-top: 7.5rem; }
+}
