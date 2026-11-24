@@ -643,6 +643,7 @@ ${clinician}
       outputTextarea.value = output;
       document.getElementById('char-count').textContent = output.length;
       renderConsistencyPanel();
+      if (window.PsyDraftsUI) PsyDraftsUI.scheduleAutosave();
     }
 
     // Quick-fill: Normal MSE for Rapid Mode
