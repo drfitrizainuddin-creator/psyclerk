@@ -9,7 +9,8 @@
   function hash(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
   function formFingerprint() {
     const c = chips().map(el => el.textContent.trim());
-    return c.length + '-' + hash(c.join('|') + '#' + fields().map(f => f.id).join('|'));
+    const opts = fields().filter(f => f.tagName === 'SELECT').map(f => f.id + ':' + Array.from(f.options).map(o => o.value).join(','));
+    return c.length + '-' + hash(c.join('|') + '#' + fields().map(f => f.id).join('|') + '#' + opts.join('|'));
   }
   function captureForm() {
     const f = {}; fields().forEach(el => { f[el.id] = el.value; });

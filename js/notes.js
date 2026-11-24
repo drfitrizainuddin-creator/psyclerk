@@ -874,7 +874,7 @@ ${clinician}
     };
     function getRiskGaps() {
       const req = RISK_REQUIRED[currentMode]; const gaps = [];
-      Object.entries(req.selects).forEach(([id, label]) => { if (document.getElementById(id).value === 'Not assessed') gaps.push(label + ' risk not rated'); });
+      Object.entries(req.selects).forEach(([id, label]) => { if (['Not assessed', ''].includes(document.getElementById(id).value)) gaps.push(label + ' risk not rated'); });
       if (!document.getElementById(req.rationale).value.trim()) gaps.push('basis for risk judgement not written');
       return gaps;
     }

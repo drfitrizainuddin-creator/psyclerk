@@ -1,6 +1,6 @@
 // Offline cache for the app's own files only. Never sees patient data: drafts live in localStorage,
 // and this worker only answers same-origin GET requests for the files listed below.
-const VERSION = '3.0.0';
+const VERSION = '3.0.1';
 const CACHE = 'psyclerk-v3-' + VERSION;
 const APP_FILES = [
   'index.html',
@@ -31,5 +31,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  e.respondWith(caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req)));
+  // Page loads at the folder address (e.g. https://host/psyclerk/) fall back to the cached index.html offline.
+  e.respondWith(caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).catch(err => {
+    if (req.mode === 'navigate') return caches.match('index.html');
+    throw err;
+  })));
 });

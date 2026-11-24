@@ -31,7 +31,9 @@
       if (!d) { if (!PsyDrafts.storageAvailable()) storageFailed(); else showToast('Limit of 10 drafts: not saved. Mark a patient Done first.', 'fa-triangle-exclamation', true); return; }
       target = activeId = d.id; PsyDrafts.setActive(d.id);
     }
-    if (!PsyDrafts.loadDraft(target)) { if (target === activeId) activeId = null; return; } // deleted/expired: never resurrect
+    const existing = PsyDrafts.loadDraft(target);
+    if (!existing) { draftVanished(target); return; } // deleted/expired elsewhere: never resurrect
+    if (!compatible(existing)) return; // saved by an older form version: never overwrite it
     if (!PsyDrafts.saveDraft(target, state, { mode: state.mode, status: riskStatus() }, UI.now())) storageFailed();
     renderPatients();
   }
@@ -45,14 +47,23 @@
   // Save what is on screen to the draft being left, before anything else changes the form.
   function leaveCurrent() { cancelPending(); saveTo(activeId); }
 
+  // A draft is usable only if it was saved by this version of the form (or has no content yet).
+  function compatible(d) { return !d.state || d.fingerprint === PsyForm.formFingerprint(); }
+  const OLD_VERSION_MSG = (label) => '"' + label + '" was saved by an older version of PsyClerk and can\'t be opened. It will delete itself automatically.';
+  function draftVanished(id) {
+    if (id !== activeId) return;
+    cancelPending(); activeId = null;
+    PsyForm.clearFormSilently(); cancelPending(); renderPatients();
+    showToast('This patient\'s draft was deleted (Done, End session or time limit).', 'fa-circle-info', true);
+  }
   function setActiveDraft(id) { activeId = id; PsyDrafts.setActive(id); }
   function switchToDraft(id) {
     if (id === activeId) return closePatients();
-    leaveCurrent();
     const d = PsyDrafts.loadDraft(id); if (!d) { renderPatients(); return; }
+    if (!compatible(d)) { showToast(OLD_VERSION_MSG(d.label), 'fa-triangle-exclamation', true); return; }
+    leaveCurrent();
     setActiveDraft(id);
-    if (d.state) { if (!PsyForm.restoreForm(d.state)) showToast('Could not open "' + d.label + '": saved by an older version.', 'fa-triangle-exclamation', true); }
-    else PsyForm.clearFormSilently();
+    if (d.state) PsyForm.restoreForm(d.state); else PsyForm.clearFormSilently();
     cancelPending();
     renderPatients(); closePatients();
   }
@@ -128,6 +139,29 @@
     $('device-type-text').textContent = dev === 'own' ? 'My own device: drafts kept 24 h' : dev === 'shared' ? 'Shared ward PC: drafts kept 12 h' : 'Device type not set';
   }
 
+  // Another tab changed storage: keep this tab in step so a stale tab never overwrites or revives data.
+  function onOtherTabChange(e) {
+    if (!e.key || !e.key.startsWith('psyclerk.draft.')) return;
+    if (activeId && e.key === 'psyclerk.draft.' + activeId) {
+      if (e.newValue === null) return draftVanished(activeId);
+      const d = PsyDrafts.loadDraft(activeId);
+      if (d && d.state && compatible(d)) { cancelPending(); PsyForm.restoreForm(d.state); cancelPending(); }
+    }
+    renderPatients();
+  }
+
+  // Sample Case always opens as its own clearly-labelled draft, never over a real patient.
+  const origSample = window.loadSampleCase;
+  window.loadSampleCase = function () {
+    if (blankSignature === null || !PsyDrafts.storageAvailable()) return origSample();
+    leaveCurrent();
+    const d = PsyDrafts.createDraft('Sample (fictional)', UI.now());
+    if (!d) { showToast('Limit of 10: mark a patient Done before loading the sample.', 'fa-triangle-exclamation', true); return; }
+    setActiveDraft(d.id); PsyForm.clearFormSilently(); cancelPending();
+    origSample();
+    renderPatients();
+  };
+
   function openPatients() { renderPatients(); show('patients-drawer', true); }
   function closePatients() { show('patients-drawer', false); }
   function openDeviceModal() { show('device-modal', true); }
@@ -142,13 +176,15 @@
     PsyDrafts.purgeExpired(UI.now());
     if (!PsyDrafts.getDeviceType()) openDeviceModal();
     const id = PsyDrafts.getActive(); const d = id && PsyDrafts.loadDraft(id);
-    if (d) {
+    if (d && !compatible(d)) { PsyDrafts.setActive(null); showToast(OLD_VERSION_MSG(d.label), 'fa-triangle-exclamation', true); }
+    else if (d) {
       activeId = id;
       if (d.state && PsyForm.restoreForm(d.state)) showToast('Restored ' + d.label + ' (edited ' + hhmm(d.updatedAt) + ')', 'fa-rotate-left');
       cancelPending();
-    } else PsyDrafts.setActive(null);
+    } else if (!d) PsyDrafts.setActive(null);
     renderPatients();
     setInterval(tick, 60000);
+    window.addEventListener('storage', onOtherTabChange);
   }
 
   Object.assign(window, { switchToDraft, newPatient, markDone, endSession, openPatients, closePatients, openDeviceModal, setDevice, renderPatients, renameActive, scheduleAutosave });
